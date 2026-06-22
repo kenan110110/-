@@ -81,7 +81,10 @@ async function readSupabaseStore() {
   const date = todayKey();
   const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?date=eq.${encodeURIComponent(date)}&select=date,patients&limit=1`;
   const response = await fetch(url, { headers: supabaseHeaders() });
-  if (!response.ok) throw new Error(`Supabase read failed: ${response.status}`);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase read failed: ${response.status} ${text}`);
+  }
   const rows = await response.json();
   if (!rows.length) return { date, patients: [] };
   return freshStore(rows[0]);
@@ -95,7 +98,10 @@ async function writeSupabaseStore(patients) {
     headers: supabaseHeaders({ Prefer: 'resolution=merge-duplicates' }),
     body: JSON.stringify({ date, patients, updated_at: new Date().toISOString() })
   });
-  if (!response.ok) throw new Error(`Supabase write failed: ${response.status}`);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase write failed: ${response.status} ${text}`);
+  }
 }
 
 async function readStore() {
@@ -165,11 +171,24 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.url === '/api/health' && req.method === 'GET') {
+    send(res, 200, JSON.stringify({
+      ok: true,
+      storage: USE_SUPABASE ? 'supabase' : (MEMORY_ONLY ? 'memory' : 'file'),
+      hasSupabaseUrl: Boolean(SUPABASE_URL),
+      hasSupabaseKey: Boolean(SUPABASE_KEY),
+      supabaseTable: SUPABASE_TABLE,
+      today: todayKey()
+    }), 'application/json; charset=utf-8');
+    return;
+  }
+
   if (req.url === '/api/patients' && req.method === 'GET') {
     try {
       send(res, 200, JSON.stringify((await readStore()).patients), 'application/json; charset=utf-8');
-    } catch {
-      send(res, 500, JSON.stringify({ ok: false, error: 'read_failed' }), 'application/json; charset=utf-8');
+    } catch (error) {
+      console.error(error);
+      send(res, 500, JSON.stringify({ ok: false, error: 'read_failed', detail: String(error.message || error) }), 'application/json; charset=utf-8');
     }
     return;
   }
@@ -186,8 +205,9 @@ const server = http.createServer(async (req, res) => {
         if (!Array.isArray(data)) throw new Error('patients must be an array');
         await writeStore(data);
         send(res, 200, JSON.stringify({ ok: true, date: todayKey() }), 'application/json; charset=utf-8');
-      } catch {
-        send(res, 400, JSON.stringify({ ok: false }), 'application/json; charset=utf-8');
+      } catch (error) {
+        console.error(error);
+        send(res, 400, JSON.stringify({ ok: false, error: 'write_failed', detail: String(error.message || error) }), 'application/json; charset=utf-8');
       }
     });
     return;
