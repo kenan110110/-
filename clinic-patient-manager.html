@@ -453,8 +453,9 @@
 
     const STORAGE_KEY = 'clinic_patient_manager_v1';
     const API_PATH = '/api/patients';
-    let patients = load();
-    let sharedMode = false;
+    const remoteMode = location.protocol !== 'file:';
+    let patients = remoteMode ? [] : load();
+    let sharedMode = remoteMode;
 
     function load() {
       try {
@@ -472,7 +473,10 @@
     async function loadRemote() {
       try {
         const res = await fetch(API_PATH, { cache: 'no-store' });
-        if (!res.ok) return false;
+        if (!res.ok) {
+          pill.textContent = '共享连接失败';
+          return false;
+        }
         const data = await res.json();
         if (Array.isArray(data)) {
           patients = data;
@@ -481,19 +485,24 @@
           render();
           return true;
         }
-      } catch {}
+      } catch {
+        pill.textContent = '共享连接失败';
+      }
       return false;
     }
 
     async function saveRemote() {
       if (!sharedMode) return;
       try {
-        await fetch(API_PATH, {
+        const res = await fetch(API_PATH, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patients)
         });
-      } catch {}
+        pill.textContent = res.ok ? '共享模式已连接' : '保存失败';
+      } catch {
+        pill.textContent = '保存失败';
+      }
     }
 
     function formatWait(start) {
@@ -634,7 +643,7 @@
         .replaceAll("'", '&#39;');
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const patient = {
         id: document.getElementById('patientId').value.trim(),
@@ -653,7 +662,7 @@
 
       patients.unshift(patient);
       save();
-      saveRemote();
+      await saveRemote();
       render();
       form.reset();
       document.querySelector('input[name="gender"][value="男"]').checked = true;
@@ -726,10 +735,11 @@
         : '0分';
     }, 1000);
 
-    if (location.protocol !== 'file:') {
+    if (remoteMode) {
+      pill.textContent = '共享模式连接中';
       loadRemote().then((ok) => {
         if (!ok) {
-          pill.textContent = '本地模式';
+          patients = [];
           render();
         }
       });
