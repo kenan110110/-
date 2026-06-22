@@ -1,17 +1,28 @@
-门诊患者管理 - 云端长期部署说明
+门诊患者管理 - Supabase 免费数据库版
 
-当前版本适合门诊当天使用：
-- 数据保存到云端文件，服务重启后仍在
-- 日期变化后自动清空
-- 默认按中国时间 UTC+8 判断日期
+用途：
+- Render 继续用免费 Web Service
+- 不使用 Render Disk
+- 数据保存到 Supabase 免费数据库
+- 按中国时间每天自动换日期；页面只读取当天数据
 
-推荐环境变量：
+需要先在 Supabase 建一个项目，然后在 SQL Editor 执行：
+
+create table if not exists public.clinic_patient_days (
+  date text primary key,
+  patients jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+Render 环境变量：
 
 APP_USER=admin
 APP_PASSWORD=你自己设置的密码
-DATA_DIR=/var/data
 AUTO_CLEAR_DAILY=true
 TZ_OFFSET_MINUTES=480
+SUPABASE_URL=你的 Supabase Project URL
+SUPABASE_SERVICE_ROLE_KEY=你的 Supabase server/secret/service_role key
+SUPABASE_TABLE=clinic_patient_days
 
 Render 设置：
 
@@ -21,16 +32,8 @@ npm install
 Start Command:
 node server.js
 
-需要添加 Persistent Disk：
-
-Mount Path:
-/var/data
-
-Size:
-1GB
-
-说明：
-- 当天数据会保存在 /var/data/patients-data.json。
-- 第二天第一次访问或写入时，如果日期已变化，会自动清空旧数据。
-- 如果你想临时内存模式，可以设置 MEMORY_ONLY=true，但服务重启后会立刻丢数据。
-- 不要把 APP_PASSWORD 写进公开仓库。
+注意：
+- 不要添加 Render Disk。
+- 不要设置 MEMORY_ONLY=true。
+- SUPABASE_SERVICE_ROLE_KEY 不要写进 GitHub，只填在 Render 环境变量里。
+- Supabase 的 REST API URL 和 API Keys 可以在 Supabase 控制台找到。

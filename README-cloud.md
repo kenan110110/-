@@ -1,6 +1,6 @@
 # 门诊患者管理
 
-这是一个可部署到云端的临时门诊患者管理网页。
+这是一个可部署到云端的门诊患者管理网页。
 
 ## 启动
 
@@ -13,10 +13,14 @@ npm start
 ```text
 APP_USER=admin
 APP_PASSWORD=your-password
-MEMORY_ONLY=true
+AUTO_CLEAR_DAILY=true
+TZ_OFFSET_MINUTES=480
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_TABLE=clinic_patient_days
 ```
 
-`MEMORY_ONLY=true` 表示数据只保存在服务运行内存里，不持久保存。当天使用结束后可在页面里清空列表；服务重启后数据也会消失。
+数据保存到 Supabase，页面只读取当天日期的数据。
 
 ## 部署文件
 
