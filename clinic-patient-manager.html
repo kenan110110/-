@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>门诊患者管理</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #122033;
+      --muted: #66758a;
+      --line: #d9e2ec;
+      --accent: #2563eb;
+      --accent-2: #14b8a6;
+      --warn: #f59e0b;
+      --good: #16a34a;
+      --bad: #dc2626;
+      --shadow: 0 8px 24px rgba(17, 32, 51, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; }
+    button, input, select, textarea { font: inherit; }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px;
+      padding-bottom: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .title h1 {
+      font-size: 20px;
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      background: #eaf2ff;
+      color: #1d4ed8;
+      border: 1px solid #cfe0ff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 380px) 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .panel-body { padding: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    textarea { min-height: 74px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .choices, .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice, .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 12px;
+      background: #fbfdff;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .choice input, .check input { width: 16px; height: 16px; margin: 0; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary { background: var(--accent); color: #fff; flex: 1; }
+    .btn.secondary { background: #e9eef6; color: #223046; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat {
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .stat .k { color: var(--muted); font-size: 12px; }
+    .stat .v { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.8fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .patient {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .patient-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .patient-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      border: 1px solid transparent;
+    }
+
+    .tag.blue { background: #eaf2ff; color: #1d4ed8; border-color: #cfe0ff; }
+    .tag.green { background: #e7f8ef; color: #057a45; border-color: #c8efd9; }
+    .tag.orange { background: #fff6df; color: #a16207; border-color: #ffe2a7; }
+    .tag.queue { background: #eefdf5; color: #047857; border-color: #bbf7d0; font-weight: 700; }
+
+    .patient-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      font-size: 13px;
+    }
+
+    .kv span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .kv strong {
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .patient-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .checkline input { width: 16px; height: 16px; margin: 0; }
+    .small-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 11px;
+      cursor: pointer;
+    }
+
+    .empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: #fbfdff;
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .toolbar { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .app { padding: 10px; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .grid, .patient-grid { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .patient-footer { flex-direction: column; align-items: flex-start; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="title">
+        <h1>门诊患者管理</h1>
+        <p>适合手机快速登记、查看和排队追踪</p>
+      </div>
+      <div class="pill">等待时间自动计时</div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>新增患者</h2>
+          <button class="small-btn" id="seedDemo" type="button">填入示例</button>
+        </div>
+        <div class="panel-body">
+          <form id="patientForm">
+            <div class="grid">
+              <div class="field">
+                <label for="patientId">患者ID</label>
+                <input id="patientId" required placeholder="例如：A1024" />
+              </div>
+              <div class="field">
+                <label for="name">名字</label>
+                <input id="name" required placeholder="请输入姓名" />
+              </div>
+              <div class="field">
+                <label>性别</label>
+                <div class="choices">
+                  <label class="choice"><input type="radio" name="gender" value="男" checked />男</label>
+                  <label class="choice"><input type="radio" name="gender" value="女" />女</label>
+                </div>
+              </div>
+              <div class="field">
+                <label for="age">年龄</label>
+                <input id="age" type="number" min="0" max="130" required placeholder="岁" />
+              </div>
+              <div class="field full">
+                <label for="source">患者来源</label>
+                <select id="source" required>
+                  <option value="术后复查">术后复查</option>
+                  <option value="门诊复诊">门诊复诊</option>
+                  <option value="首诊">首诊</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="chiefComplaint">主诉</label>
+                <textarea id="chiefComplaint" placeholder="请填写主诉"></textarea>
+              </div>
+              <div class="field full">
+                <label for="diagnosis">初步诊断</label>
+                <textarea id="diagnosis" placeholder="请填写初步诊断"></textarea>
+              </div>
+              <div class="field full">
+                <label for="remark">备注</label>
+                <textarea id="remark" placeholder="可填写特殊情况、沟通记录或其他提醒"></textarea>
+              </div>
+              <div class="field full">
+                <label>自带检查</label>
+                <div class="checks">
+                  <label class="check"><input type="checkbox" name="brought" value="检验报告" />检验报告</label>
+                  <label class="check"><input type="checkbox" name="brought" value="X线" />X线</label>
+                  <label class="check"><input type="checkbox" name="brought" value="CT" />CT</label>
+                  <label class="check"><input type="checkbox" name="brought" value="核磁" />核磁</label>
+                </div>
+              </div>
+              <div class="field full">
+                <label for="needExam">需做检查</label>
+                <select id="needExam" required>
+                  <option value="否">否</option>
+                  <option value="是">是</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label class="checkline">
+                  <input id="addedCheck" type="checkbox" />
+                  已加号
+                </label>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn primary" type="submit">添加患者</button>
+              <button class="btn secondary" type="button" id="resetForm">清空</button>
+            </div>
+            <div class="hint">提交后等待时间会从这一刻开始自动计算。</div>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>患者列表</h2>
+          <button class="small-btn" id="clearAll" type="button">清空列表</button>
+        </div>
+        <div class="panel-body">
+          <div class="summary">
+            <div class="stat"><div class="k">总人数</div><div class="v" id="totalCount">0</div></div>
+            <div class="stat"><div class="k">已加号</div><div class="v" id="addedCount">0</div></div>
+            <div class="stat"><div class="k">需检查</div><div class="v" id="needExamCount">0</div></div>
+            <div class="stat"><div class="k">平均等待</div><div class="v" id="avgWait">0分</div></div>
+          </div>
+
+          <div class="toolbar">
+            <input id="search" placeholder="搜索 ID、名字、主诉、诊断、备注" />
+            <select id="filterSource">
+              <option value="">全部来源</option>
+              <option value="术后复查">术后复查</option>
+              <option value="门诊复诊">门诊复诊</option>
+              <option value="首诊">首诊</option>
+            </select>
+            <select id="filterAdded">
+              <option value="">全部状态</option>
+              <option value="true">已加号</option>
+              <option value="false">未加号</option>
+            </select>
+          </div>
+
+          <div class="list" id="patientList"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('patientForm');
+    const list = document.getElementById('patientList');
+    const search = document.getElementById('search');
+    const filterSource = document.getElementById('filterSource');
+    const filterAdded = document.getElementById('filterAdded');
+    const totalCount = document.getElementById('totalCount');
+    const addedCount = document.getElementById('addedCount');
+    const needExamCount = document.getElementById('needExamCount');
+    const avgWait = document.getElementById('avgWait');
+    const clearAll = document.getElementById('clearAll');
+    const resetForm = document.getElementById('resetForm');
+    const seedDemo = document.getElementById('seedDemo');
+    const pill = document.querySelector('.pill');
+
+    const STORAGE_KEY = 'clinic_patient_manager_v1';
+    const API_PATH = '/api/patients';
+    let patients = load();
+    let sharedMode = false;
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+    }
+
+    async function loadRemote() {
+      try {
+        const res = await fetch(API_PATH, { cache: 'no-store' });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          patients = data;
+          sharedMode = true;
+          pill.textContent = '共享模式已连接';
+          render();
+          return true;
+        }
+      } catch {}
+      return false;
+    }
+
+    async function saveRemote() {
+      if (!sharedMode) return;
+      try {
+        await fetch(API_PATH, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patients)
+        });
+      } catch {}
+    }
+
+    function formatWait(start) {
+      const seconds = Math.max(0, Math.floor((Date.now() - start) / 1000));
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      if (h > 0) return `${h}小时${m}分`;
+      if (m > 0) return `${m}分${s}秒`;
+      return `${s}秒`;
+    }
+
+    function minutesFromStart(start) {
+      return Math.max(0, Math.floor((Date.now() - start) / 60000));
+    }
+
+    function getGender() {
+      return document.querySelector('input[name="gender"]:checked').value;
+    }
+
+    function getBroughtChecks() {
+      return [...document.querySelectorAll('input[name="brought"]:checked')].map(el => el.value);
+    }
+
+    function queueGroup(source) {
+      return source === '术后复查' ? 'postop' : 'returnFirst';
+    }
+
+    function queueLabel(group, number) {
+      return group === 'postop' ? `术后-${number}` : `门复/首诊-${number}`;
+    }
+
+    function buildQueueInfo(items) {
+      const queueInfo = new WeakMap();
+      const groups = {
+        postop: [],
+        returnFirst: []
+      };
+
+      [...items]
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .forEach(patient => groups[queueGroup(patient.source)].push(patient));
+
+      Object.entries(groups).forEach(([group, groupItems]) => {
+        groupItems.forEach((patient, index) => {
+          queueInfo.set(patient, {
+            group,
+            number: index + 1,
+            label: queueLabel(group, index + 1)
+          });
+        });
+      });
+
+      return queueInfo;
+    }
+
+    function sourceOrder(source) {
+      const order = {
+        '术后复查': 1,
+        '门诊复诊': 2,
+        '首诊': 3
+      };
+      return order[source] || 99;
+    }
+
+    function render() {
+      const term = search.value.trim().toLowerCase();
+      const source = filterSource.value;
+      const added = filterAdded.value;
+      const queueInfo = buildQueueInfo(patients);
+
+      const filtered = patients.filter(p => {
+        const haystack = [p.id, p.name, p.chiefComplaint, p.diagnosis, p.remark].join(' ').toLowerCase();
+        if (term && !haystack.includes(term)) return false;
+        if (source && p.source !== source) return false;
+        if (added !== '' && String(p.added) !== added) return false;
+        return true;
+      }).sort((a, b) => {
+        const sourceDiff = sourceOrder(a.source) - sourceOrder(b.source);
+        if (sourceDiff !== 0) return sourceDiff;
+        return a.createdAt - b.createdAt;
+      });
+
+      totalCount.textContent = patients.length;
+      addedCount.textContent = patients.filter(p => p.added).length;
+      needExamCount.textContent = patients.filter(p => p.needExam === '是').length;
+      avgWait.textContent = patients.length
+        ? `${Math.round(patients.reduce((sum, p) => sum + minutesFromStart(p.createdAt), 0) / patients.length)}分`
+        : '0分';
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty">暂无患者，先从左侧新增一位吧。</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(p => {
+        const q = queueInfo.get(p);
+        return `
+        <article class="patient" data-id="${p.id}">
+          <div class="patient-top">
+            <div>
+              <h3 class="patient-name">${escapeHtml(p.name)} <span style="color:#94a3b8;font-size:13px;font-weight:600;">#${escapeHtml(p.id)}</span></h3>
+              <div class="meta">
+                <span class="tag queue">${escapeHtml(q.label)}</span>
+                <span class="tag blue">${escapeHtml(p.gender)}</span>
+                <span class="tag blue">${escapeHtml(p.source)}</span>
+                <span class="tag ${p.added ? 'green' : 'orange'}">${p.added ? '已加号' : '未加号'}</span>
+              </div>
+            </div>
+            <div class="tag orange" data-wait="${p.createdAt}">等待 ${formatWait(p.createdAt)}</div>
+          </div>
+          <div class="patient-grid">
+            <div class="kv"><span>年龄</span><strong>${escapeHtml(String(p.age))} 岁</strong></div>
+            <div class="kv"><span>需做检查</span><strong>${escapeHtml(p.needExam)}</strong></div>
+            <div class="kv full"><span>主诉</span><strong>${escapeHtml(p.chiefComplaint || '—')}</strong></div>
+            <div class="kv full"><span>初步诊断</span><strong>${escapeHtml(p.diagnosis || '—')}</strong></div>
+            <div class="kv full"><span>备注</span><strong>${escapeHtml(p.remark || '—')}</strong></div>
+            <div class="kv full"><span>自带检查</span><strong>${p.brought.length ? p.brought.map(escapeHtml).join('、') : '无'}</strong></div>
+          </div>
+          <div class="patient-footer">
+            <label class="checkline">
+              <input type="checkbox" ${p.added ? 'checked' : ''} data-toggle-added="${p.id}" />
+              已加号
+            </label>
+            <button class="small-btn" type="button" data-delete="${p.id}">删除</button>
+          </div>
+        </article>
+      `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const patient = {
+        id: document.getElementById('patientId').value.trim(),
+        name: document.getElementById('name').value.trim(),
+        gender: getGender(),
+        age: Number(document.getElementById('age').value),
+        source: document.getElementById('source').value,
+        chiefComplaint: document.getElementById('chiefComplaint').value.trim(),
+        diagnosis: document.getElementById('diagnosis').value.trim(),
+        remark: document.getElementById('remark').value.trim(),
+        brought: getBroughtChecks(),
+        needExam: document.getElementById('needExam').value,
+        added: document.getElementById('addedCheck').checked,
+        createdAt: Date.now()
+      };
+
+      patients.unshift(patient);
+      save();
+      saveRemote();
+      render();
+      form.reset();
+      document.querySelector('input[name="gender"][value="男"]').checked = true;
+      document.getElementById('needExam').value = '否';
+    });
+
+    list.addEventListener('click', (e) => {
+      const del = e.target.closest('[data-delete]');
+      if (del) {
+        const id = del.getAttribute('data-delete');
+        patients = patients.filter(p => p.id !== id);
+        save();
+        saveRemote();
+        render();
+      }
+    });
+
+    list.addEventListener('change', (e) => {
+      const toggle = e.target.closest('[data-toggle-added]');
+      if (toggle) {
+        const id = toggle.getAttribute('data-toggle-added');
+        const item = patients.find(p => p.id === id);
+        if (item) {
+          item.added = toggle.checked;
+          save();
+          saveRemote();
+          render();
+        }
+      }
+    });
+
+    [search, filterSource, filterAdded].forEach(el => el.addEventListener('input', render));
+    [filterSource, filterAdded].forEach(el => el.addEventListener('change', render));
+
+    clearAll.addEventListener('click', () => {
+      if (confirm('确定清空全部患者吗？')) {
+        patients = [];
+        save();
+        saveRemote();
+        render();
+      }
+    });
+
+    resetForm.addEventListener('click', () => form.reset());
+
+    seedDemo.addEventListener('click', () => {
+      const demo = [
+        {
+          id: 'P1001', name: '李明', gender: '男', age: 56, source: '术后复查',
+          chiefComplaint: '左膝术后随访', diagnosis: '膝关节术后恢复期', remark: '复查片子已带', brought: ['检验报告'], needExam: '否', added: true, createdAt: Date.now() - 18 * 60000
+        },
+        {
+          id: 'P1002', name: '王婷', gender: '女', age: 34, source: '门诊复诊',
+          chiefComplaint: '腰痛反复', diagnosis: '腰椎间盘突出待查', remark: '需要安排进一步检查', brought: ['X线', '核磁'], needExam: '是', added: false, createdAt: Date.now() - 42 * 60000
+        }
+      ];
+      patients = demo.concat(patients);
+      save();
+      saveRemote();
+      render();
+    });
+
+    setInterval(() => {
+      document.querySelectorAll('[data-wait]').forEach(el => {
+        const start = Number(el.getAttribute('data-wait'));
+        el.textContent = `等待 ${formatWait(start)}`;
+      });
+      avgWait.textContent = patients.length
+        ? `${Math.round(patients.reduce((sum, p) => sum + minutesFromStart(p.createdAt), 0) / patients.length)}分`
+        : '0分';
+    }, 1000);
+
+    if (location.protocol !== 'file:') {
+      loadRemote().then((ok) => {
+        if (!ok) {
+          pill.textContent = '本地模式';
+          render();
+        }
+      });
+    } else {
+      pill.textContent = '本地模式';
+      render();
+    }
+
+    setInterval(() => {
+      if (sharedMode) loadRemote();
+    }, 3000);
+  </script>
+</body>
+</html>

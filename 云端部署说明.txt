@@ -1,0 +1,45 @@
+门诊患者管理 - 云端长期部署说明
+
+当前文件已经支持云端部署：
+- package.json：告诉云平台如何启动
+- server.js：支持云平台 PORT、访问密码、当天临时数据模式
+- render.yaml：Render 平台部署模板
+
+推荐环境变量：
+
+APP_USER=admin
+APP_PASSWORD=你自己设置的密码
+MEMORY_ONLY=true
+
+Render 部署步骤：
+
+1. 把 outputs 文件夹里的这些文件上传到一个 GitHub 仓库：
+   clinic-patient-manager.html
+   server.js
+   package.json
+   render.yaml
+
+2. 打开 Render：
+   https://render.com/
+
+3. New + -> Web Service
+
+4. 连接 GitHub 仓库。
+
+5. 如果仓库根目录就是这些文件：
+   Build Command: npm install
+   Start Command: node server.js
+
+6. 添加环境变量：
+   APP_USER=admin
+   APP_PASSWORD=你的访问密码
+   MEMORY_ONLY=true
+
+7. 部署完成后，Render 会给你一个 https 网址。
+   打开网址后输入用户名和密码即可访问。
+
+重要提醒：
+- 不要把 APP_PASSWORD 写进公开代码仓库。
+- MEMORY_ONLY=true 时，数据只临时保存在服务内存中；平台重启、休眠、重新部署后数据会消失。
+- 当天使用结束后，也可以在页面里点“清空列表”。
+- 真实患者隐私信息建议使用国内合规云服务器、HTTPS、强密码和定期备份。
