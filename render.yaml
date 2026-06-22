@@ -10,5 +10,13 @@ services:
         value: admin
       - key: APP_PASSWORD
         sync: false
-      - key: MEMORY_ONLY
+      - key: DATA_DIR
+        value: /var/data
+      - key: AUTO_CLEAR_DAILY
         value: "true"
+      - key: TZ_OFFSET_MINUTES
+        value: "480"
+    disk:
+      name: patient-data
+      mountPath: /var/data
+      sizeGB: 1
